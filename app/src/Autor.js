@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import $ from 'jquery';
 import InputCustomizado from './components/InputCustomizado';
 import ButtonApp from './components/ButtonApp';
+import PubSub from 'pubsub-js';
 
 class FormularioAutor extends Component{
    
@@ -42,8 +43,8 @@ enviarForm(evento){
       data: xdata,
       contentType: 'application/json',
       success: function(resposta){
-        this.props.callbackAtualizaListagem();
-      }.bind(this),
+        PubSub.publish("atualiza-listagem-autores",true)
+      },
       error: function(resposta){      
         console.log("erro");
         console.log(resposta);
@@ -64,7 +65,6 @@ enviarForm(evento){
   }
 
 }
-
 
  class TabelaAutores extends Component{ 
     render(){
@@ -100,7 +100,6 @@ export class AutorBox extends Component{
 constructor(){
   super();
   this.state = {lista: []} ;
-  this.carregarInformacoes = this.carregarInformacoes.bind(this);
 }
   
   render(){
@@ -110,7 +109,7 @@ constructor(){
               <h1>Cadastro de Autores</h1>
         </div>
         <div className="content" id="content">
-              <FormularioAutor callbackAtualizaListagem = {this.carregarInformacoes}/>
+              <FormularioAutor />
               <TabelaAutores lista = {this.state.lista}/>
         </div>  
       </div>        
@@ -122,16 +121,22 @@ carregarInformacoes(){
     url:"http://localhost:20000/api/Autor",
     dataType: 'json',    
     type: 'GET',       
-    success: function(resposta){
-      console.log(resposta);
-      console.log("ok");
-
+    success: function(resposta){      
        this.setState({lista: resposta});
+       console.log(resposta.length);
+       PubSub.publish("atualiza-menu-autores",resposta.length)
     }.bind(this)
   });
 }
 
-  componentDidMount(){
-    this.carregarInformacoes();
+  componentDidMount(){   
+
+    PubSub.subscribe("atualiza-listagem-autores", function(topico, canRefresh){
+        this.carregarInformacoes();
+    }.bind(this));
+
+    PubSub.publish("atualiza-listagem-autores",true);
   }
+
+  
 }
